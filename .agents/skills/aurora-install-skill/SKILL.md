@@ -7,7 +7,9 @@ description: Reinstall, document, run, and troubleshoot the verified Microsoft A
 
 ## Overview
 
-Use this skill to help the user rebuild or operate the Microsoft Aurora workflow validated on a Slurm-managed Hygon DCU cluster. Keep this skill separate from `jingjing-2020/aurora-hygon-dcu`; that repository is the workflow/result repository, while `aurora_install_skill` is the Codex instruction repository.
+Use this skill to help the user rebuild or operate the Microsoft Aurora workflow validated on a Slurm-managed Hygon DCU cluster. Keep this skill separate from `jingjing-2020/aurora-hygon-dcu`; that repository is the workflow/result repository, while `aurora_install_skill` is the reusable installation and assistant-instruction repository.
+
+This repository is not Codex-only. The Codex entry point is this `.agents/skills/aurora-install-skill/` directory, Claude Code should start from the root `CLAUDE.md`, and human/server users can use `scripts/bootstrap_aurora_server.sh` with `config/aurora_server.env.example`.
 
 ## First Checks
 
@@ -49,11 +51,23 @@ Read `references/aurora-hygon-dcu-install.md` when the user asks for:
 
 - exact rebuild steps;
 - what was installed;
+- Claude Code or non-Codex usage;
+- one-command server bootstrap;
 - ERA5 weather commands;
 - CAMS chemistry or air-pollution commands;
 - Slurm templates;
 - validation checklist;
 - troubleshooting.
+
+When the user asks for a one-click or server-side install helper, point them to:
+
+```bash
+cp config/aurora_server.env.example config/aurora_server.env
+vi config/aurora_server.env
+bash scripts/bootstrap_aurora_server.sh --config config/aurora_server.env
+```
+
+Explain that this bootstraps directories, modules, package overlays, and import checks. It does not store credentials, accept Copernicus terms, download large datasets, or run full forecasts.
 
 ## Success Criteria
 

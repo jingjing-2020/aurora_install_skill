@@ -1,10 +1,18 @@
-# Aurora 安装与运行 Skill
+# Aurora 安装与运行说明
 
-这个仓库专门放 Codex skill：`aurora-install-skill`。它从原来的 [aurora-hygon-dcu](https://github.com/jingjing-2020/aurora-hygon-dcu) 项目里拆出来，避免把“给 Codex 用的操作说明”和“实际 Aurora 代码/结果仓库”混在一起。
+这个仓库不是只能给 Codex 用。它从原来的 [aurora-hygon-dcu](https://github.com/jingjing-2020/aurora-hygon-dcu) 项目里拆出来，专门保存 Aurora 在 Hygon DCU/Slurm 服务器上的安装、运行、排错知识。
+
+现在它有三种入口：
+
+1. **Codex 用**：`.agents/skills/aurora-install-skill/`
+2. **Claude Code 用**：`CLAUDE.md`
+3. **人自己在服务器上一键初始化**：`scripts/bootstrap_aurora_server.sh`
+
+所以 `.agents/skills` 只是 Codex 能直接调用的结构，不代表这份知识只能被 Codex 使用。Claude Code 可以读 `CLAUDE.md` 和同一份 reference；普通用户也可以直接看 README 或运行 bootstrap 脚本。
 
 ## 这个仓库是做什么的
 
-它不是模型代码仓库，而是一个 **Codex 可调用的工作流 skill**，用来帮助你以后复现这套服务器工作：
+它不是模型代码仓库，而是一个 **安装知识库 + 助手说明 + 服务器 bootstrap 工具**，用来帮助你以后复现这套服务器工作：
 
 1. 在 Slurm 管理的 Hygon DCU 服务器上准备 Microsoft Aurora 环境。
 2. 运行 ERA5 气象预报流程。
@@ -24,6 +32,8 @@
 `aurora_install_skill` 只放：
 
 - 给 Codex 使用的 `.agents/skills/aurora-install-skill/`。
+- 给 Claude Code 使用的 `CLAUDE.md`。
+- 给人/服务器使用的 `scripts/bootstrap_aurora_server.sh` 和配置模板。
 - README 和安装/运行说明。
 
 这样以后你问 Codex “Aurora 怎么装”“CAMS 怎么跑”“Slurm 报错怎么办”，Codex 可以直接使用这个 skill，而不是每次重新读散落的聊天记录。
@@ -34,6 +44,11 @@
 aurora_install_skill/
 ├── README.md
 ├── README_zh.md
+├── CLAUDE.md
+├── config/
+│   └── aurora_server.env.example
+├── scripts/
+│   └── bootstrap_aurora_server.sh
 └── .agents/
     └── skills/
         └── aurora-install-skill/
@@ -43,6 +58,59 @@ aurora_install_skill/
             └── references/
                 └── aurora-hygon-dcu-install.md
 ```
+
+## 普通用户怎么在服务器上一键初始化
+
+在服务器登录节点上：
+
+```bash
+git clone https://github.com/jingjing-2020/aurora_install_skill.git
+cd aurora_install_skill
+cp config/aurora_server.env.example config/aurora_server.env
+vi config/aurora_server.env
+bash scripts/bootstrap_aurora_server.sh --config config/aurora_server.env
+```
+
+这个脚本会做这些事：
+
+1. 读取你自己的服务器配置。
+2. 尝试加载 module：compiler、OpenMPI、DTK、DTK PyTorch。
+3. 创建隔离目录：`aurora_py38`、`cams_tools`、`hf_cache`。
+4. 用 DTK Python 安装 Aurora 和下载工具。
+5. 检查 `torch`、`aurora`、`cdsapi`、`huggingface_hub` 能否导入。
+
+它不会做这些事：
+
+1. 不保存 ADS/CDS/Hugging Face 密钥。
+2. 不自动下载 ERA5/CAMS 大数据。
+3. 不自动提交完整科学预测作业。
+4. 不替你决定真实 Slurm 分区名、GRES 名称、账号队列限制。
+
+所以这里的“一键”指的是 **服务器环境 bootstrap 和导入检查**。真正跑 ERA5/CAMS 还需要去 `aurora-hygon-dcu` 使用对应脚本、数据和 Slurm 作业文件。
+
+如果只想检查当前环境，不安装包：
+
+```bash
+bash scripts/bootstrap_aurora_server.sh --config config/aurora_server.env --only-checks
+```
+
+如果想先看它会执行什么：
+
+```bash
+bash scripts/bootstrap_aurora_server.sh --config config/aurora_server.env --dry-run
+```
+
+## Claude Code 怎么用
+
+Claude Code 不需要 `.agents` 特殊机制也能用这个仓库。让它先读：
+
+```text
+CLAUDE.md
+README_zh.md
+.agents/skills/aurora-install-skill/references/aurora-hygon-dcu-install.md
+```
+
+然后它就可以按照同一套安装、气象、CAMS、Slurm、排错规则工作。
 
 ## 已验证的软件环境
 
@@ -203,7 +271,7 @@ ExitCode=0:0
 | Hugging Face 下载失败 | 计算节点无网络 | 在联网节点下载，正式作业设 `HF_HUB_OFFLINE=1` |
 | NO2/O3 含义不清 | 不是地面直接输出 | 标成“地形以上最低可用压力层近地面近似” |
 
-## 使用方式
+## Codex 使用方式
 
 在 Codex 里可以这样问：
 
@@ -216,3 +284,15 @@ Use $aurora-install-skill to show me how to reinstall Aurora on the Hygon DCU se
 ```text
 用 $aurora-install-skill 帮我检查 Aurora 服务器环境，并告诉我气象和化学两条流程分别怎么跑。
 ```
+
+## 重要边界
+
+这个仓库记录的是已经验证过的环境和可复现的重建模式，不是完整服务器 shell history。以后写文档或让助手操作时，要区分：
+
+```text
+已验证：真实跑通过、日志/输出确认过的内容。
+重建模式：根据已验证环境整理出来的推荐安装命令。
+未验证：换服务器、换 module、换 Python、换数据日期后的情况。
+```
+
+不要提交真实账号、服务器 IP、API key、token、私有路径、大数据文件、模型 checkpoint、Slurm 日志和作业号。

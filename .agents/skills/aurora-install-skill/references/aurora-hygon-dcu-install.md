@@ -8,11 +8,12 @@ Use this reference when the user asks for detailed steps to install, rerun, or t
 2. What was installed
 3. Directory layout
 4. Rebuild pattern
-5. ERA5 weather workflow
-6. CAMS chemistry / air-pollution workflow
-7. Slurm templates
-8. Verification checklist
-9. Troubleshooting table
+5. Server bootstrap helper
+6. ERA5 weather workflow
+7. CAMS chemistry / air-pollution workflow
+8. Slurm templates
+9. Verification checklist
+10. Troubleshooting table
 
 ## 1. Evidence Boundary
 
@@ -149,7 +150,42 @@ For CPU preparation and plotting, verify the actual Python has:
 xarray, netcdf4, numpy, matplotlib, cartopy
 ```
 
-## 5. ERA5 Weather Workflow
+## 5. Server Bootstrap Helper
+
+This repository includes a plain Bash helper for non-Codex users:
+
+```bash
+cp config/aurora_server.env.example config/aurora_server.env
+vi config/aurora_server.env
+bash scripts/bootstrap_aurora_server.sh --config config/aurora_server.env
+```
+
+The helper automates:
+
+- loading the configured module stack when `module` is available;
+- creating `<SERVER_ROOT>`, `<AURORA_PY38>`, `<CAMS_TOOLS>`, and `<HF_CACHE>`;
+- installing Aurora and download helper packages into isolated overlays;
+- checking DTK Python, PyTorch/HIP, Aurora, `cdsapi`, and `huggingface_hub` imports.
+
+The helper does not:
+
+- store ADS/CDS/Hugging Face credentials;
+- accept Copernicus dataset terms;
+- decide cluster-specific partition or GRES names;
+- download large ERA5/CAMS files;
+- submit full scientific forecast jobs.
+
+Useful modes:
+
+```bash
+bash scripts/bootstrap_aurora_server.sh --config config/aurora_server.env --dry-run
+bash scripts/bootstrap_aurora_server.sh --config config/aurora_server.env --only-checks
+bash scripts/bootstrap_aurora_server.sh --config config/aurora_server.env --skip-install
+```
+
+Use the bootstrap result as an environment check before running scripts from `jingjing-2020/aurora-hygon-dcu`.
+
+## 6. ERA5 Weather Workflow
 
 ERA5 creates a weather Batch. It does not contain pollution initial conditions.
 
@@ -207,7 +243,7 @@ Surface prediction shape: (1, 1, 720, 1440)
 Pressure-level prediction shape: (1, 1, 13, 720, 1440)
 ```
 
-## 6. CAMS Chemistry / Air-Pollution Workflow
+## 7. CAMS Chemistry / Air-Pollution Workflow
 
 CAMS uses different data from ERA5. Do not use an ERA5 Batch for `AuroraAirPollution`.
 
@@ -340,7 +376,7 @@ NO2 and O3: lowest available pressure level above terrain, converted from kg kg-
 
 Do not call NO2 and O3 true ground-monitor concentrations unless station-height vertical matching has been added.
 
-## 7. Slurm Templates
+## 8. Slurm Templates
 
 Base DCU job:
 
@@ -408,7 +444,7 @@ scontrol show node | grep -i gres
 sbatch --test-only run.slurm
 ```
 
-## 8. Verification Checklist
+## 9. Verification Checklist
 
 Before model jobs:
 
@@ -447,7 +483,7 @@ Logs include explicit completion
 Finite-value check passed
 ```
 
-## 9. Troubleshooting Table
+## 10. Troubleshooting Table
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
