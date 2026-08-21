@@ -1,0 +1,11 @@
+.DS_Store
+__pycache__/
+*.pyc
+.env
+.cdsapirc
+*.ckpt
+*.pt
+*.nc
+*.zip
+*.npz
+*.log

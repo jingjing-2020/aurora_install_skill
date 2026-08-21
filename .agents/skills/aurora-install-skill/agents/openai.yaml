@@ -1,0 +1,4 @@
+interface:
+  display_name: "Aurora Install Skill"
+  short_description: "Install and run Aurora on Hygon DCU"
+  default_prompt: "Use $aurora-install-skill to reinstall Aurora on the Hygon DCU server and rerun the ERA5 weather and CAMS chemistry workflows."
